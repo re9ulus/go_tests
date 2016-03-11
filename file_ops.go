@@ -1,7 +1,9 @@
 package main
 
 import (
+	"os"
 	"fmt"
+	"bufio"
 	"io/ioutil"
 )
 
@@ -17,7 +19,40 @@ func ReadFile(filename string) string {
 	return string(data)
 }
 
+func ReadNBytes(filename string, n int) string {
+	f, err := os.Open(filename)
+	check(err)
+	buf := make([]byte, n)
+	_, err = f.Read(buf)
+	check(err)
+	f.Close()
+	return string(buf)
+}
+
+func ReadFileBuf(filename string, n int) string {
+	f, err := os.Open(filename)
+	check(err)
+	reader := bufio.NewReader(f)
+	buf, err := reader.Peek(n)
+	check(err)
+	f.Close()
+	return string(buf)
+}
+
+
 func main() {
-	var fileContent string = ReadFile("./hello.go")
+	var filename string = "./hello.go"
+	fmt.Println(">> Read whole file: ")
+	var fileContent string = ReadFile(filename)
+	fmt.Println(fileContent)
+
+	var n int = 10
+
+	fmt.Printf(">> Read first %d bytes\n", n)
+	fileContent = ReadNBytes(filename, n)
+	fmt.Println(fileContent)
+
+	fmt.Printf(">> Read first %d bytes with buffio\n", n)
+	fileContent = ReadFileBuf(filename, n)
 	fmt.Println(fileContent)
 }
