@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	// "golang.org/x/net/html"
 )
 
 func checkError(err error) {
@@ -28,16 +28,42 @@ func getPage(url string) string {
 	return string(body)
 }
 
-// func getUrlsFromPage(page string) []string {
-
-// }
+func getUrlsFromPage(url string) map[string]bool {
+	doc, err := goquery.NewDocument(url)
+	checkError(err)
+	links := make(map[string]bool)
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		link, exists := s.Attr("href")
+		if exists && !(strings.HasPrefix(link, "http")) {
+			links[link] = true
+		}
+	})
+	return links
+}
 
 func main() {
-	url := "http://www.tornadoweb.org/"
-	fmt.Println(getPage(url))
+	urlRoot := "http://www.tornadoweb.org/"
+	links := make(map[string]bool)
+	visitedLinks := make(map[string]bool)
 
-	doc, _ := goquery.NewDocument("http://metalsucks.net")
-	fmt.Println(doc)
+	links[""] = true
 
-	// z := html.NewTokenizer(doc)
+	for len(links) > 0 {
+		for link, _ := range links {
+			fmt.Println(len(visitedLinks))
+			delete(links, link)
+			visitedLinks[link] = true
+			newLinks := getUrlsFromPage(urlRoot + link)
+			for newLink, _ := range newLinks {
+				_, ok := visitedLinks[newLink]
+				if !ok {
+					links[newLink] = true
+				}
+			}
+		}
+	}
+
+	// for key, _ := range links {
+	// 	fmt.Println(key)
+	// }
 }
