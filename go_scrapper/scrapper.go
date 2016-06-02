@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/PuerkitoBio/goquery"
+	// "golang.org/x/net/html"
 )
 
 func checkError(err error) {
@@ -27,16 +28,16 @@ func getPage(url string) string {
 	return string(body)
 }
 
-func getUrlsFromPage(page string) []string {
+// func getUrlsFromPage(page string) []string {
 
-}
+// }
 
 func main() {
 	url := "http://www.tornadoweb.org/"
 	fmt.Println(getPage(url))
 
-	doc, err := goquery.NewDocument("http://metalsucks.net")
+	doc, _ := goquery.NewDocument("http://metalsucks.net")
 	fmt.Println(doc)
 
-	doc, err := goquery.NewDocument("http://www.tornadoweb.org/")
+	// z := html.NewTokenizer(doc)
 }
