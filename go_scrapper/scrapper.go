@@ -1,15 +1,21 @@
 // by re9ulus 30.05.2016
 
+/*
+TODO:
+1. Pass url as command arg
+2. Save '.html' pages to disc
+3. Pass path to 'save' folder as command arg
+*/
+
 package main
 
 import (
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
-
-	"github.com/PuerkitoBio/goquery"
+	"time"
 )
 
 func checkError(err error) {
@@ -19,51 +25,73 @@ func checkError(err error) {
 	}
 }
 
-func getPage(url string) string {
-	resp, err := http.Get(url)
-	checkError(err)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	checkError(err)
-	return string(body)
+func checkLink(url string) bool {
+	return !(strings.HasPrefix(url, "http") || strings.Contains(url, "#"))
 }
 
-func getUrlsFromPage(url string) map[string]bool {
+func savePage(filename, html string) {
+	fmt.Println("Write ", filename)
+	ioutil.WriteFile(filename, []byte(html), 0222)
+}
+
+func urlToFilename(url string) string {
+	filename := strings.Replace(url, "http://", "", -1)
+	filename = strings.Replace(filename, "/", "_", -1)
+	// filename = strings.Replace(filename, ":", "", -1)
+	return filename
+}
+
+func getUrlsFromPage(url string, newLinkChan chan string) {
+	fmt.Println("Url to process: ", url)
 	doc, err := goquery.NewDocument(url)
 	checkError(err)
-	links := make(map[string]bool)
+
+	// fmt.Println(doc.Html())
+	if strings.HasSuffix(url, ".html") {
+		content, err := doc.Html()
+		checkError(err)
+
+		go savePage("F:/test/"+urlToFilename(url), content)
+	}
+
+	checkError(err)
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
 		link, exists := s.Attr("href")
-		if exists && !(strings.HasPrefix(link, "http")) {
-			links[link] = true
+		if exists && checkLink(link) {
+			newLinkChan <- link
 		}
 	})
-	return links
 }
 
 func main() {
-	urlRoot := "http://www.tornadoweb.org/"
-	links := make(map[string]bool)
+	urlRoot := "http://www.tornadoweb.org/en/stable/"
 	visitedLinks := make(map[string]bool)
+	visitedLinks[""] = true
+	defaultUrl := ""
+	newLinkChan := make(chan string)
 
-	links[""] = true
+	go getUrlsFromPage(urlRoot+defaultUrl, newLinkChan)
 
-	for len(links) > 0 {
-		for link, _ := range links {
-			fmt.Println(len(visitedLinks))
-			delete(links, link)
-			visitedLinks[link] = true
-			newLinks := getUrlsFromPage(urlRoot + link)
-			for newLink, _ := range newLinks {
-				_, ok := visitedLinks[newLink]
-				if !ok {
-					links[newLink] = true
-				}
+	stopCounter := 0
+	for stopCounter < 3 {
+		select {
+		case newLink := <-newLinkChan:
+			stopCounter = 0
+			_, ok := visitedLinks[newLink]
+			if !ok {
+				visitedLinks[newLink] = true
+				go getUrlsFromPage(urlRoot+newLink, newLinkChan)
 			}
+		case <-time.After(time.Second):
+			fmt.Println("exit?")
+			stopCounter += 1
 		}
 	}
 
-	// for key, _ := range links {
-	// 	fmt.Println(key)
-	// }
+	for key, _ := range visitedLinks {
+		fmt.Println(key)
+	}
+	fmt.Println(len(visitedLinks))
+
+	fmt.Println("Exit from main")
 }
