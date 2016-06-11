@@ -2,7 +2,7 @@
 
 /*
 TODO:
-1. Move SO requst logic to APIRequest function
+1. Separate common logic in getSearch and getAnsById functions
 */
 
 package main
@@ -10,13 +10,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	// "io/ioutil"
-	// "io"
+	"html"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
-
-	"html"
 )
 
 const (
@@ -32,17 +30,21 @@ func checkError(err error) {
 	}
 }
 
-func getAnsById(id int) (string, bool) {
-	request := APIUrl + fmt.Sprintf(AnsUrl, id)
-	fmt.Println("request: ", request)
-
-	resp, err := http.Get(request)
+func APIRequest(request string) io.ReadCloser {
+	urlRequest := APIUrl + request
+	fmt.Println("url request: ", urlRequest)
+	resp, err := http.Get(urlRequest)
 	checkError(err)
-	defer resp.Body.Close()
+	return resp.Body
+}
 
-	decoder := json.NewDecoder(resp.Body)
+func getAnsById(id int) (string, bool) {
+	body := APIRequest(fmt.Sprintf(AnsUrl, id))
+	defer body.Close()
+
+	decoder := json.NewDecoder(body)
 	var data AnsList
-	err = decoder.Decode(&data)
+	err := decoder.Decode(&data)
 
 	if err != nil {
 		fmt.Println("error occured")
@@ -56,16 +58,12 @@ func getAnsById(id int) (string, bool) {
 }
 
 func getSearch(question string) SearchInfoList {
-	request := APIUrl + fmt.Sprintf(SearchUrl, url.QueryEscape(question))
-	fmt.Println("request: ", request)
+	body := APIRequest(fmt.Sprintf(SearchUrl, url.QueryEscape(question)))
+	defer body.Close()
 
-	resp, err := http.Get(request)
-	checkError(err)
-	defer resp.Body.Close()
-
-	decoder := json.NewDecoder(resp.Body)
+	decoder := json.NewDecoder(body)
 	var data SearchInfoList
-	err = decoder.Decode(&data)
+	err := decoder.Decode(&data)
 
 	if err != nil {
 		fmt.Println("error occured")
@@ -107,6 +105,5 @@ func main() {
 		fmt.Println(i, item.Title, item.AcceptedAnswerId)
 		fmt.Println(getAnsById(item.AcceptedAnswerId))
 		fmt.Println("\n===\n")
-		// getAnsById(33448575)
 	}
 }
