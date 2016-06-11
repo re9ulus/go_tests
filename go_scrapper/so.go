@@ -15,6 +15,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+
+	"html"
 )
 
 const (
@@ -30,7 +32,7 @@ func checkError(err error) {
 	}
 }
 
-func getAnsById(id int) (Ans, bool) {
+func getAnsById(id int) (string, bool) {
 	request := APIUrl + fmt.Sprintf(AnsUrl, id)
 	fmt.Println("request: ", request)
 
@@ -47,9 +49,9 @@ func getAnsById(id int) (Ans, bool) {
 	}
 
 	if len(data.Answers) > 0 {
-		return data.Answers[0], true
+		return html.UnescapeString(data.Answers[0].Body), true
 	} else {
-		return nil, false
+		return "", false
 	}
 }
 
@@ -103,7 +105,8 @@ func main() {
 	fmt.Println("data length: ", len(info.Infos))
 	for i, item := range info.Infos {
 		fmt.Println(i, item.Title, item.AcceptedAnswerId)
-		getAnsById(item.AcceptedAnswerId)
+		fmt.Println(getAnsById(item.AcceptedAnswerId))
+		fmt.Println("\n===\n")
 		// getAnsById(33448575)
 	}
 }
