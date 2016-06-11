@@ -3,12 +3,15 @@
 /*
 TODO:
 1. Separate common logic in getSearch and getAnsById functions
+2. Add rating fields to questions and answers
+3. Add while loop for user requests
 */
 
 package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html"
 	"io"
@@ -19,7 +22,7 @@ import (
 
 const (
 	APIUrl    = "https://api.stackexchange.com//2.2/"
-	SearchUrl = "search?order=desc&sort=relevance&site=stackoverflow&intitle=%s"
+	SearchUrl = "search?order=desc&sort=votes&site=stackoverflow&intitle=%s" //relevance
 	AnsUrl    = "answers/%d?order=desc&sort=activity&site=stackoverflow&filter=!9YdnSM68f"
 )
 
@@ -97,13 +100,38 @@ type Question struct {
 }
 
 func main() {
-	question := "python compare lists"
+	var question string
+	flag.StringVar(&question, "q", "", "question to search for")
+	flag.Parse()
+
 	info := getSearch(question)
 
-	fmt.Println("data length: ", len(info.Infos))
-	for i, item := range info.Infos {
-		fmt.Println(i, item.Title, item.AcceptedAnswerId)
-		fmt.Println(getAnsById(item.AcceptedAnswerId))
+	fmt.Println("\nquestion found: ", len(info.Infos))
+	fmt.Println("\n")
+
+	if len(info.Infos) > 0 {
+		for i, item := range info.Infos {
+			if item.IsAnswered {
+				fmt.Println(i, item.Title, "(", item.QuestionId, ")")
+			}
+			// fmt.Println(i, item.Title, item.AcceptedAnswerId)
+			// fmt.Println(getAnsById(item.AcceptedAnswerId))
+			// fmt.Println("\n===\n")
+		}
+
+		fmt.Print("\n>> Selec question: ")
+
+		var i int
+		_, err := fmt.Scanf("%d", &i)
+
+		fmt.Println("\n===\n")
+		checkError(err)
+		if 0 <= i && i < len(info.Infos) {
+			answer, _ := getAnsById(info.Infos[i].AcceptedAnswerId)
+			fmt.Println(answer)
+		} else {
+			fmt.Println("Wrong input.")
+		}
 		fmt.Println("\n===\n")
 	}
 }
