@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	APIUrl    = "https://api.stackexchange.com//2.2/"
-	SearchUrl = "search?order=desc&sort=votes&site=stackoverflow&intitle=%s" //relevance
+	APIUrl = "https://api.stackexchange.com//2.2/"
+	// sort=[activity, votes, relevance]
+	SearchUrl = "search?order=desc&sort=relevance&site=stackoverflow&intitle=%s"
 	AnsUrl    = "answers/%d?order=desc&sort=activity&site=stackoverflow&filter=!9YdnSM68f"
 )
 
@@ -114,12 +115,9 @@ func main() {
 			if item.IsAnswered {
 				fmt.Println(i, item.Title, "(", item.QuestionId, ")")
 			}
-			// fmt.Println(i, item.Title, item.AcceptedAnswerId)
-			// fmt.Println(getAnsById(item.AcceptedAnswerId))
-			// fmt.Println("\n===\n")
 		}
 
-		fmt.Print("\n>> Selec question: ")
+		fmt.Print("\n>> Select question: ")
 
 		var i int
 		_, err := fmt.Scanf("%d", &i)
