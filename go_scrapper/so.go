@@ -23,8 +23,9 @@ import (
 const (
 	APIUrl = "https://api.stackexchange.com//2.2/"
 	// sort=[activity, votes, relevance]
-	SearchUrl = "search?order=desc&sort=relevance&site=stackoverflow&intitle=%s"
-	AnsUrl    = "answers/%d?order=desc&sort=activity&site=stackoverflow&filter=!9YdnSM68f"
+	SearchUrl   = "search?order=desc&sort=relevance&site=stackoverflow&intitle=%s"
+	AnsUrl      = "answers/%d?order=desc&sort=activity&site=stackoverflow&filter=!9YdnSM68f"
+	QuestionUrl = "questions/%d?order=desc&sort=activity&site=stackoverflow"
 )
 
 func checkError(err error) {
@@ -43,6 +44,7 @@ func APIRequest(request string) io.ReadCloser {
 }
 
 func getAnsById(id int) (string, bool) {
+	// ToDo: Should return Answer obj, not string
 	body := APIRequest(fmt.Sprintf(AnsUrl, id))
 	defer body.Close()
 
@@ -56,6 +58,26 @@ func getAnsById(id int) (string, bool) {
 
 	if len(data.Answers) > 0 {
 		return html.UnescapeString(data.Answers[0].Body), true
+	} else {
+		return "", false
+	}
+}
+
+func getQuestionById(id int) (string, bool) {
+	// ToDo: Should return Question obj, not string
+	body := APIRequest(fmt.Sprintf(QuestionUrl, id))
+	defer body.Close()
+
+	decoder := json.NewDecoder(body)
+	var data QuestionList
+	err := decoder.Decode(&data)
+
+	if err != nil {
+		fmt.Println("error occured")
+	}
+
+	if len(data.Questions) > 0 {
+		return html.UnescapeString(data.Questions[0].Title), true
 	} else {
 		return "", false
 	}
@@ -98,6 +120,13 @@ type AnsList struct {
 }
 
 type Question struct {
+	QuestionId int    `json:"question_id"`
+	IsAnswered bool   `json:"is_answered"`
+	Title      string `json:"title"`
+}
+
+type QuestionList struct {
+	Questions []Question `json:"items"`
 }
 
 func main() {
