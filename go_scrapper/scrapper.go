@@ -43,8 +43,6 @@ func getUrlsFromPage(url string, newLinkChan chan string, saveFolder string) {
 		return
 	}
 
-	// fmt.Println(doc.Html())
-	// if strings.HasSuffix(url, ".html") {
 	content, err := doc.Html()
 	if err != nil {
 		fmt.Println("error occured", "error: %s", err.Error())
@@ -52,7 +50,6 @@ func getUrlsFromPage(url string, newLinkChan chan string, saveFolder string) {
 	}
 
 	go savePage(saveFolder+urlToFilename(url), content)
-	// }
 
 	checkError(err)
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
@@ -61,6 +58,26 @@ func getUrlsFromPage(url string, newLinkChan chan string, saveFolder string) {
 			newLinkChan <- link
 		}
 	})
+}
+
+func isFolderExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, err
+}
+
+func mkDir(path string) error {
+	isExists, err := isFolderExists(path)
+	checkError(err)
+	if !isExists {
+		return os.MkdirAll(path, 0777)
+	}
+	return nil
 }
 
 func main() {
