@@ -11,6 +11,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"html"
@@ -43,8 +44,7 @@ func APIRequest(request string) io.ReadCloser {
 	return resp.Body
 }
 
-func getAnsById(id int) (string, bool) {
-	// ToDo: Should return Answer obj, not string
+func getAnsById(id int) (Ans, error) {
 	body := APIRequest(fmt.Sprintf(AnsUrl, id))
 	defer body.Close()
 
@@ -57,14 +57,17 @@ func getAnsById(id int) (string, bool) {
 	}
 
 	if len(data.Answers) > 0 {
-		return html.UnescapeString(data.Answers[0].Body), true
+		return data.Answers[0], nil
 	} else {
-		return "", false
+		return Ans{}, errors.New("Cat't get ans")
 	}
 }
 
-func getQuestionById(id int) (string, bool) {
-	// ToDo: Should return Question obj, not string
+func (ans *Ans) Content() string {
+	return html.UnescapeString(ans.Body)
+}
+
+func getQuestionById(id int) (Question, error) {
 	body := APIRequest(fmt.Sprintf(QuestionUrl, id))
 	defer body.Close()
 
@@ -77,10 +80,14 @@ func getQuestionById(id int) (string, bool) {
 	}
 
 	if len(data.Questions) > 0 {
-		return html.UnescapeString(data.Questions[0].Title), true
+		return data.Questions[0], nil
 	} else {
-		return "", false
+		return Question{}, errors.New("Can't get question")
 	}
+}
+
+func (question *Question) Content() string {
+	return html.UnescapeString(question.Content())
 }
 
 func getSearch(question string) SearchInfoList {
@@ -154,8 +161,12 @@ func main() {
 		fmt.Println("\n===\n")
 		checkError(err)
 		if 0 <= i && i < len(info.Infos) {
-			answer, _ := getAnsById(info.Infos[i].AcceptedAnswerId)
-			fmt.Println(answer)
+			answer, err := getAnsById(info.Infos[i].AcceptedAnswerId)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println(answer.Content())
+			}
 		} else {
 			fmt.Println("Wrong input.")
 		}
