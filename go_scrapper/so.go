@@ -2,7 +2,7 @@
 
 /*
 TODO:
-1. Separate common logic in getSearch and getAnsById functions
+1. Separate common logic in search and getAnsById functions
 2. Add rating fields to questions and answers
 3. Add while loop for user requests
 */
@@ -26,7 +26,7 @@ const (
 	// sort=[activity, votes, relevance]
 	SearchUrl   = "search?order=desc&sort=relevance&site=stackoverflow&intitle=%s"
 	AnsUrl      = "answers/%d?order=desc&sort=activity&site=stackoverflow&filter=!9YdnSM68f"
-	QuestionUrl = "questions/%d?order=desc&sort=activity&site=stackoverflow"
+	QuestionUrl = "questions/%d?order=desc&sort=activity&site=stackoverflow&filter=!9YdnSJ*_T"
 )
 
 func checkError(err error) {
@@ -38,7 +38,6 @@ func checkError(err error) {
 
 func APIRequest(request string) io.ReadCloser {
 	urlRequest := APIUrl + request
-	fmt.Println("url request: ", urlRequest)
 	resp, err := http.Get(urlRequest)
 	checkError(err)
 	return resp.Body
@@ -87,10 +86,10 @@ func getQuestionById(id int) (Question, error) {
 }
 
 func (question *Question) Content() string {
-	return html.UnescapeString(question.Content())
+	return html.UnescapeString(question.Title) + "\n" + html.UnescapeString(question.Body)
 }
 
-func getSearch(question string) SearchInfoList {
+func search(question string) SearchInfoList {
 	body := APIRequest(fmt.Sprintf(SearchUrl, url.QueryEscape(question)))
 	defer body.Close()
 
@@ -130,6 +129,7 @@ type Question struct {
 	QuestionId int    `json:"question_id"`
 	IsAnswered bool   `json:"is_answered"`
 	Title      string `json:"title"`
+	Body       string `json:"body_markdown"`
 }
 
 type QuestionList struct {
@@ -141,7 +141,7 @@ func main() {
 	flag.StringVar(&question, "q", "", "question to search for")
 	flag.Parse()
 
-	info := getSearch(question)
+	info := search(question)
 
 	fmt.Println("\nquestion found: ", len(info.Infos))
 	fmt.Println("\n")
@@ -161,10 +161,20 @@ func main() {
 		fmt.Println("\n===\n")
 		checkError(err)
 		if 0 <= i && i < len(info.Infos) {
+
+			question, err := getQuestionById(info.Infos[i].QuestionId)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println("QUESTION:")
+				fmt.Println(question.Content())
+			}
+			fmt.Print("\n\n")
 			answer, err := getAnsById(info.Infos[i].AcceptedAnswerId)
 			if err != nil {
 				fmt.Println(err)
 			} else {
+				fmt.Println("ANSWER:")
 				fmt.Println(answer.Content())
 			}
 		} else {
